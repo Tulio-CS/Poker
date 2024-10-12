@@ -1,7 +1,9 @@
 from random import shuffle
 
 SUITS = ["clubs","hearts","diamonds","spades"]
-RANKS = ["ace","two","three","four","five","six","seven","eight","nine","queen","jack","king"]
+SUITS_ICONS = {"clubs":"♣","hearts":"♥","diamonds":"♦","spades":"♠"}
+RANKS = ["two","three","four","five","six","seven","eight","nine","ten","jack","queen","king","ace"]
+RANKS_VALUES = {"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,"jack":11,"queen":12,"king":13,"ace":14}
 
 
 class Deck:
@@ -19,18 +21,19 @@ class Deck:
         shuffle(self.cards)
 
         
+from itertools import combinations
+
 class Player:
     def __init__(self):
         self.hand = None
 
-    def rankHand(self, board = False):
-
+    def evalHand(self, board=None):
         allCards = list(self.hand)
 
         if board:
-            allCards += list(board)
+            allCards += board
 
-        ranks = [card[0] for card in allCards]
+        ranks = sorted([RANKS_VALUES[card[0]] for card in allCards], reverse=True)
         suits = [card[1] for card in allCards]
         rank_counts = {rank: ranks.count(rank) for rank in ranks}
         
@@ -38,15 +41,72 @@ class Player:
         three_of_a_kind = [rank for rank, count in rank_counts.items() if count == 3]
         four_of_a_kind = [rank for rank, count in rank_counts.items() if count == 4]
 
-        isFlush = (len(set(suits)) == 1 and len(allCards >= 5))
+        suit_counts = {suit: suits.count(suit) for suit in SUITS}
+        flush_suit = next((suit for suit, count in suit_counts.items() if count >= 5), None)
+        isFlush = flush_suit is not None
+
+        unique_ranks = sorted(set(ranks), reverse=True)
+        isStraight = False
+        straight_high_card = None
+
+        for i in range(len(unique_ranks) - 4):
+            if unique_ranks[i] - unique_ranks[i + 4] == 4:
+                isStraight = True
+                straight_high_card = unique_ranks[i]
+                break
+
+        if set([14, 2, 3, 4, 5]).issubset(unique_ranks):
+            isStraight = True
+            straight_high_card = 5
+
+        handValue = 0
+        if len(pairs) == 1:
+            handValue = 1
+        if len(pairs) == 2:
+            handValue = 2
+        if len(three_of_a_kind) > 0:
+            handValue = 3
+        if isStraight:
+            handValue = 4
+        if isFlush:
+            handValue = 5
+        if len(three_of_a_kind) > 0 and len(pairs) > 0:
+            handValue = 6
+        if len(four_of_a_kind) > 0:
+            handValue = 7 
+        if isStraight and isFlush:
+            if straight_high_card == 14:
+                handValue = 9  
+            else:
+                handValue = 8 
+
+        return (sum(ranks),handValue)
 
 
+class Poker:
+    def __init__ (self,numPlayers):
+        self.players = [Player() for _ in range(numPlayers - 1)]
+        self.deck = Deck()
+        self.turn = None
+        self.river = None
 
+    def drawCards(self):
+        for player in self.players:
+            player.hand = self.deck.dealNumCards(2)
+        self.turn = self.deck.dealNumCards(3)
+        self.river = self.deck.dealNumCards(2)
 
-baralho = Deck()
+    def checkWinner(self):
 
-tulio = Player()
-tulio.hand = baralho.dealNumCards(2)
-turn = baralho.dealNumCards(3)
+        # TODO
 
-tulio.rankHand([turn + baralho.dealNumCards(1)])
+        handEval = [player.evalHand() for player in self.players]
+        rankings = [hand[1] for hand in handEval]
+        rankSum  = [hand[0] for hand in handEval]
+
+        winner = rankings.index(max(rankings))
+        if rankings.count(max(rankings)) == 1:
+            return winner        
+        
+        # TODO
+
