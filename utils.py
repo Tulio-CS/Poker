@@ -20,9 +20,6 @@ class Deck:
         self.cards = [(rank,suit) for rank in RANKS for suit in SUITS]
         shuffle(self.cards)
 
-        
-from itertools import combinations
-
 class Player:
     def __init__(self):
         self.hand = None
