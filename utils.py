@@ -1,4 +1,8 @@
 from random import shuffle
+from copy import deepcopy
+
+
+
 
 SUITS = ["clubs","hearts","diamonds","spades"]
 SUITS_ICONS = {"clubs":"♣","hearts":"♥","diamonds":"♦","spades":"♠"}
@@ -24,9 +28,9 @@ class Player:
     def __init__(self):
         self.hand = None
 
-    def evalHand(self, board=None):
+    def evalHand(self, board=[]):
         allCards = list(self.hand)
-
+        highCard = max([RANKS_VALUES[card[0]] for card in self.hand])
         if board:
             allCards += board
 
@@ -77,33 +81,60 @@ class Player:
             else:
                 handValue = 8 
 
-        return (sum(ranks),handValue)
+        return (handValue, highCard)
 
 
 class Poker:
     def __init__ (self,numPlayers):
-        self.players = [Player() for _ in range(numPlayers - 1)]
+        self.players = [Player() for _ in range(numPlayers)]
         self.deck = Deck()
         self.turn = None
         self.river = None
 
-    def drawCards(self):
-        for player in self.players:
-            player.hand = self.deck.dealNumCards(2)
-        self.turn = self.deck.dealNumCards(3)
-        self.river = self.deck.dealNumCards(2)
+    def drawCards(self,player,deck):
+        player.hand = deck.dealNumCards(2)
+    
+    def drawTurn(self,deck):
+        self.turn = deck.dealNumCards(3)
 
-    def checkWinner(self):
+    def drawRiver(self,deck):
+        self.river = deck.dealNumCards(2)
 
-        # TODO
-
-        handEval = [player.evalHand() for player in self.players]
-        rankings = [hand[1] for hand in handEval]
-        rankSum  = [hand[0] for hand in handEval]
-
-        winner = rankings.index(max(rankings))
-        if rankings.count(max(rankings)) == 1:
-            return winner        
+    def checkWinner(self,turn = [],river = []):
+        handEval = [player.evalHand(turn+river) for player in self.players]
+        handValue = [hand[0] for hand in handEval]
+        highCards = [hand[1] for hand in handEval]
+        maxHandValue = max(handValue)
+        if handValue.count(maxHandValue) == 1:
+            return handValue.index(maxHandValue)
+        else:
+            maxRankValue = max(handValue)
+            return handValue.index(maxRankValue)
         
-        # TODO
+    def game(self):
+        self.deck.newDeck()
+        for player in self.players:
+            self.drawCards(player,self.deck)
+        self.drawTurn(self.deck)
+        self.drawRiver(self.deck)
+        return self.checkWinner(self.turn,self.river)
+    
+    def monteCarlo(self,numIterations):
+        self.drawCards(self.players[0],self.deck)
+        print(self.players[0].hand)
+        winCount = 0
+        for _ in range(numIterations):
+            deck = deepcopy(self.deck)
+            for player in self.players[1:]:
+                self.drawCards(player,deck)
+            self.drawTurn(deck)
+            self.drawRiver(deck)
+            print(self.checkWinner(self.turn,self.river))
+            if self.checkWinner(self.turn,self.river) == 0:
+                winCount += 1
+        return winCount/numIterations
+
+
+jogo = Poker(6)
+print(jogo.monteCarlo(10))
 
