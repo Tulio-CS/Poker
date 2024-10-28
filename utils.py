@@ -125,16 +125,16 @@ class Poker:
         winCount = 0
         for _ in range(numIterations):
             deck = deepcopy(self.deck)
+            shuffle(deck.cards)
             for player in self.players[1:]:
                 self.drawCards(player,deck)
             self.drawTurn(deck)
             self.drawRiver(deck)
-            print(self.checkWinner(self.turn,self.river))
             if self.checkWinner(self.turn,self.river) == 0:
                 winCount += 1
         return winCount/numIterations
 
 
 jogo = Poker(6)
-print(jogo.monteCarlo(10))
+print(jogo.monteCarlo(10000))
 
